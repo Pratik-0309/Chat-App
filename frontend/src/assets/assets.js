@@ -3,7 +3,7 @@ import gallery_icon from './gallery_icon.svg'
 import help_icon from './help_icon.png'
 import logo_icon from './logo_icon.svg'
 import logo_big from './logo_big.svg'
-import logo from './logo.png'
+import logo2 from './logo2.png'
 import profile_richard from './profile_richard.png'
 import profile_alison from './profile_alison.png'
 import profile_enrique from './profile_enrique.png'
@@ -28,7 +28,7 @@ const assets = {
     help_icon,
     logo_big,
     logo_icon,
-    logo,
+    logo2,
     search_icon,
     send_button,
     menu_icon,
