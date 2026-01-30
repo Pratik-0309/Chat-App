@@ -8,7 +8,7 @@ const options = {
   path: "/",
 };
 
-const generateAccessAndRefreshToken = async(userId) => {
+const generateAccessAndRefreshToken = async (userId) => {
   try {
     const user = await User.findById(userId);
     if (!user) {
@@ -75,4 +75,100 @@ const refreshAccessToken = async (req, res) => {
   }
 };
 
+const userRegister = async (req, res) => {
+  try {
+    const { email, fullName, password, bio } = req.body;
 
+    if (!email || !fullName || !password || !bio) {
+      return res.status(400).json({ message: "All fields are required" });
+    }
+
+    const userExists = await User.findOne({ email });
+    if (userExists) {
+      return res.status(400).json({
+        message: "User already exists",
+        success: false,
+      });
+    }
+
+    const user = await User.create({
+      email,
+      fullName,
+      password,
+      bio,
+    });
+
+    const accessToken = user.generateAccessToken();
+    const refreshToken = user.generateRefreshToken();
+
+    user.refreshToken = refreshToken;
+    await user.save({ validateBeforeSave: false });
+
+    return res
+      .status(201)
+      .cookie("accessToken", accessToken, options)
+      .cookie("refreshToken", refreshToken, options)
+      .json({
+        success: true,
+        message: "User registered successfully",
+        accessToken,
+        user,
+      });
+  } catch (error) {
+    return res.status(500).json({
+      message: "Server Error",
+      success: false,
+      error: error.message,
+    });
+  }
+};
+
+const userLogin = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ message: "All fields are required" });
+    }
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res
+        .status(404)
+        .json({ message: "User not found", success: false });
+    }
+    const isPasswordMatched = await user.matchPassword(password);
+    if (!isPasswordMatched) {
+      return res
+        .status(401)
+        .json({ message: "Invalid credentials", success: false });
+    }
+
+    const { refreshToken, accessToken } = await generateAccessAndRefreshToken(
+      user._id,
+    );
+
+    const loggedInUser = await User.findById(user._id).select(
+      "-password -refreshToken",
+    );
+
+    return res
+      .status(200)
+      .cookie("accessToken", accessToken, options)
+      .cookie("refreshToken", refreshToken, options)
+      .json({
+        success: true,
+        message: "User logged in successfully",
+        accessToken,
+        user: loggedInUser,
+      });
+  } catch (error) {
+    console.error("Error logging in user:", error);
+    return res.status(500).json({
+      message: "Server Error",
+      success: false,
+      error: error.message,
+    });
+  }
+};
+
+export { userLogin, userRegister, refreshAccessToken };
