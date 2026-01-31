@@ -1,5 +1,6 @@
 import User from "../models/User.js";
 import jwt from "jsonwebtoken";
+import uploadOnCloudinary from "../config/cloudinary.js";
 
 const options = {
   httpOnly: true,
@@ -171,4 +172,75 @@ const userLogin = async (req, res) => {
   }
 };
 
-export { userLogin, userRegister, refreshAccessToken };
+const updateProfile = async (req, res) => {
+  try {
+    const { fullName, bio } = req.body;
+    const profilePic = req.file;
+    const userId = req.user._id;
+
+    if (!fullName && !bio && !profilePic) {
+      return res
+        .status(400)
+        .json({ message: "At least one field is required to update profile" });
+    }
+
+    const updatedData = {};
+    if (fullName) updatedData.fullName = fullName;
+    if (bio) updatedData.bio = bio;
+
+    if (profilePic) {
+      const uploadResult = await uploadOnCloudinary(profilePic.path);
+      if (!uploadResult) {
+        return res
+          .status(400)
+          .json({ message: "Failed to upload profile picture" });
+      }
+      updatedData.profilePic = uploadResult.secure_url;
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(userId, updatedData, {
+      new: true,
+      runValidators: true,
+    }).select("-password -refreshToken");
+
+    return res.status(200).json({
+      user: updatedUser,
+      success: true,
+      message: "Profile updated successfully",
+    });
+  } catch (error) {
+    console.log("Error Upadating Profile:", error);
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+const userLogout = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    user.refreshToken = null;
+    await user.save({ validateBeforeSave: false });
+    return res
+      .status(200)
+      .clearCookie("accessToken", options)
+      .clearCookie("refreshToken", options)
+      .json({
+        success: true,
+        message: "User logged out successfully",
+      });
+  } catch (error) {
+    console.error("Error logging out user:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
+export { userLogin, userRegister, refreshAccessToken, updateProfile, userLogout };
