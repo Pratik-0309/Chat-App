@@ -1,5 +1,7 @@
 import User from "../models/User.js";
 import Message from "../models/Message.js";
+import uploadOnCloudinary from "../config/cloudinary.js";
+import {io, userSocketMap} from "../server.js";
 
 const getAllUsers = async (req, res) => {
   try {
@@ -82,4 +84,44 @@ const markMessagesAsSeen = async (req, res) => {
   }
 };
 
-export  { getAllUsers, getMessages, markMessagesAsSeen };
+const sendMessage = async (req, res) => {
+  try {
+    const { text, image } = req.body;
+    const recieverId = req.params.id;
+    const senderId = req.user._id;
+
+    let imageUrl;
+
+    if (image) {
+      const response = await uploadOnCloudinary(image);
+      imageUrl = response.secure_url;
+    }
+
+    const newMessage = await Message.create({
+      senderId,
+      recieverId,
+      text,
+      image: imageUrl,
+    });
+
+    // Emit the new message to the receiver
+    const receiverSocketId = userSocketMap[recieverId];
+    if(receiverSocketId) {
+      io.to(receiverSocketId).emit("new-message", newMessage);
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Message sent successfully",
+      newMessage,
+    });
+  } catch (error) {
+    console.log("Error sending message :", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to send message",
+    });
+  }
+};
+
+export { getAllUsers, getMessages, markMessagesAsSeen, sendMessage };
