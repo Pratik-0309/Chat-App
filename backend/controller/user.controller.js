@@ -172,6 +172,24 @@ const userLogin = async (req, res) => {
   }
 };
 
+const authUser = async(req,res) => {
+  try {
+    const userId = req.user;
+    const user = await User.findById(userId).select("-password -refreshToken");
+    return res.status(200).json({
+      success: true,
+      message: "User authenticated",
+      user,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Error authenticating user",
+      error: error.message,
+    });
+  }
+}
+
 const updateProfile = async (req, res) => {
   try {
     const { fullName, bio } = req.body;
@@ -243,4 +261,4 @@ const userLogout = async (req, res) => {
   }
 };
 
-export { userLogin, userRegister, refreshAccessToken, updateProfile, userLogout };
+export { userLogin, userRegister, refreshAccessToken,authUser, updateProfile, userLogout };
