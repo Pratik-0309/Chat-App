@@ -26,12 +26,14 @@ const verifyAuth = async (req, res, next) => {
     req.user = user;
     next();
   } catch (error) {
+    if (error.name === "TokenExpiredError") {
+      return res.status(401).json({ success: false, message: "Token expired" });
+    }
     console.error("Authentication error:", error);
     return res
-      .status(500)
+      .status(401)
       .json({ success: false, message: "Internal server error" });
   }
 };
-
 
 export default verifyAuth;
