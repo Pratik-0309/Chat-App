@@ -7,7 +7,7 @@ export const AuthContext = createContext();
 
 const backendURL = import.meta.env.VITE_BACKEND_URL;
 
-export const AuthProvider = ({ children }) => {
+const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -32,6 +32,22 @@ export const AuthProvider = ({ children }) => {
       setLoading(false);
     }
   };
+
+  const login = async (state) => {
+    try {
+      const {data} = await axiosInstance.post(`/api/users/${state}`)
+      if(data.success){
+        setUser(data.user)
+        setIsAuthenticated
+        connectSocket(data.user)
+        toast.success(data.message)
+      }else{
+        toast.error(data.message)
+      }
+    } catch (error) {
+      toast.error(error.message)
+    }
+  }
 
   // function to handle socket connection and online users update
   const connectSocket = (userData) => {
@@ -67,3 +83,6 @@ export const AuthProvider = ({ children }) => {
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
+
+
+export default AuthProvider;
