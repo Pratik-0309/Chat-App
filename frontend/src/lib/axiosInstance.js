@@ -24,7 +24,7 @@ axiosInstance.interceptors.response.use(
         if(status === 401 && !originalRequest._retry && !isRefreshCall){
             originalRequest._retry = true;
             try {
-                await axiosInstance.get('/api/users/refresh-token');
+                await axiosInstance.post('/api/users/refresh-token');
                 return axiosInstance(originalRequest);
             } catch (error) {
                 return Promise.reject(error);
