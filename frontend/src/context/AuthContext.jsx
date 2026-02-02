@@ -33,12 +33,12 @@ const AuthProvider = ({ children }) => {
     }
   };
 
-  const login = async (state) => {
+  const login = async (state, formData) => {
     try {
-      const {data} = await axiosInstance.post(`/api/users/${state}`)
+      const {data} = await axiosInstance.post(`/api/users/${state}`, formData)
       if(data.success){
         setUser(data.user)
-        setIsAuthenticated
+        setIsAuthenticated(true)
         connectSocket(data.user)
         toast.success(data.message)
       }else{
@@ -46,6 +46,37 @@ const AuthProvider = ({ children }) => {
       }
     } catch (error) {
       toast.error(error.message)
+    }
+  }
+
+  const logout = async () => {
+    try{
+      const {data} = await axiosInstance.post('/api/users/logout');
+      if(data.success){ 
+        setUser(null);
+        setIsAuthenticated(false);
+        setOnlineUsers([]);
+        if(socket){
+          socket.disconnect();
+        }
+        toast.success(data.message);
+      }else{
+        toast.error(data.message);
+      }
+    }catch(error){
+      toast.error(error.message);
+    }
+  }
+
+  const updateProfile = async (formData) => {
+    try {
+      const {data} = await axiosInstance.put('/api/users/profile', formData);
+      if(data.success){
+        setUser(data.user);
+        toast.success(data.message);
+      }
+    } catch (error) {
+      toast.error(error.message);
     }
   }
 
@@ -79,6 +110,11 @@ const AuthProvider = ({ children }) => {
     setOnlineUsers,
     socket,
     setSocket,
+    login,
+    logout,
+    updateProfile,
+    checkAuth,
+    connectSocket,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
