@@ -70,7 +70,11 @@ const AuthProvider = ({ children }) => {
 
   const updateProfile = async (formData) => {
     try {
-      const {data} = await axiosInstance.put('/api/users/profile', formData);
+      const {data} = await axiosInstance.put('/api/users/profile', formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
       if(data.success){
         setUser(data.user);
         toast.success(data.message);
