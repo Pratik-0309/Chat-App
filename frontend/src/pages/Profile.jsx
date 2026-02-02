@@ -1,15 +1,25 @@
-import { useState } from "react";
+import { useContext, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import assets from "../assets/assets";
+import { AuthContext } from "../context/AuthContext.jsx";
 
 const Profile = () => {
+  const { user, updateProfile } = useContext(AuthContext);
+
   const [selectedImg, setSelectedImg] = useState(null);
   const navigate = useNavigate();
-  const [name, setName] = useState("Martin Johnson");
-  const [bio, setBio] = useState("Hi Everyone, I am using SnapTalk");
+  const [name, setName] = useState(user.fullName);
+  const [bio, setBio] = useState(user.bio);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    const formData = new FormData();
+    formData.append("fullName", name);
+    formData.append("bio", bio);
+    if (selectedImg) {
+      formData.append("profilePic", selectedImg);
+    }
+    await updateProfile(formData);
     navigate("/");
   };
 
@@ -85,12 +95,28 @@ const Profile = () => {
         </form>
 
         {/* Right Side */}
+        {/* Right Side */}
         <div className="hidden md:flex flex-1 items-center justify-center bg-black/10 h-full p-10 border-l border-white/5">
-          <img
-            className="w-full max-w-60 opacity-70 drop-shadow-[0_0_15px_rgba(139,92,246,0.3)]"
-            src={assets.logo_icon}
-            alt="SnapTalk Logo"
-          />
+          <div className="relative w-60 h-60">
+            {" "}
+            <img
+              className={`w-full h-full object-cover transition-all shadow-2xl ${
+                selectedImg || user.profilePic
+                  ? "rounded-full object-cover border-2 border-violet-300/30 p-1"
+                  : "opacity-70"
+              }`}
+              src={
+                selectedImg
+                  ? URL.createObjectURL(selectedImg)
+                  : user.profilePic || assets.logo_icon
+              }
+              alt="Profile Preview"
+            />
+            {/* Optional: Glow effect for the circular profile */}
+            {(selectedImg || user.profilePic) && (
+              <div className="absolute inset-0 rounded-full blur-xl bg-violet-500/10 -z-10"></div>
+            )}
+          </div>
         </div>
       </div>
     </div>
