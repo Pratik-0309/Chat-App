@@ -1,9 +1,9 @@
-import { Children, createContext, useContext, useEffect } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import { AuthContext } from "./AuthContext.jsx";
 import axiosInstance from "../lib/axiosInstance.js";
 import toast from "react-hot-toast";
 
-const ChatContext = createContext();
+export const ChatContext = createContext();
 
 const ChatProvider = ({ children }) => {
   const [messages, setMessages] = useState([]);
@@ -18,7 +18,7 @@ const ChatProvider = ({ children }) => {
       const { data } = await axiosInstance.get("/api/messages/users");
       if (data.success) {
         setUsers(data.users);
-        setUnseenMessages(data.unseenMessages);
+        setUnseenMessages(data.unSeenMessages);
       }
     } catch (error) {
       toast.error(error.message);
@@ -38,9 +38,17 @@ const ChatProvider = ({ children }) => {
 
   const sendMessage = async (messageData) => {
     try {
+      const isFormData = messageData instanceof FormData;
       const { data } = await axiosInstance.post(
         `/api/messages/send/${selectedUser?._id}`,
         messageData,
+        {
+          headers: {
+            "Content-Type": isFormData
+              ? "multipart/form-data"
+              : "application/json",
+          },
+        },
       );
       if (data.success) {
         setMessages((prev) => [...prev, data.newMessage]);
@@ -56,16 +64,12 @@ const ChatProvider = ({ children }) => {
   const subscribeToMessages = () => {
     if (!socket) return;
     socket.on("newMessage", (newMessage) => {
-      if (selectedUser && newMessage.senderId === selectedUser._id) {
-        newMessage.seen = true;
+      if (selectedUser?._id === newMessage.senderId) {
         setMessages((prev) => [...prev, newMessage]);
-        axiosInstance.put(`/api/messages/seen/${newMessage._id}`);
       } else {
         setUnseenMessages((prev) => ({
           ...prev,
-          [newMessage.senderId]: prev[newMessage.senderId]
-            ? prev[newMessage.senderId] + 1
-            : 1,
+          [newMessage.senderId]: (prev[newMessage.senderId] || 0) + 1,
         }));
       }
     });
@@ -77,11 +81,26 @@ const ChatProvider = ({ children }) => {
   };
 
   useEffect(() => {
+    if (selectedUser) {
+      getMessages(selectedUser._id);
+      setUnseenMessages((prev) => ({
+        ...prev,
+        [selectedUser._id]: 0,
+      }));
+    }
+  }, [selectedUser]);
+
+  useEffect(() => {
+    if (!socket) return;
     subscribeToMessages();
     return () => {
       unsubscribeFromMessages();
     };
   }, [socket, selectedUser]);
+
+  useEffect(() => {
+    getUsers();
+  }, []);
 
   const value = {
     messages,
@@ -90,6 +109,7 @@ const ChatProvider = ({ children }) => {
     setUsers,
     selectedUser,
     setSelectedUser,
+    getMessages,
     getUsers,
     sendMessage,
     unseenMessages,
