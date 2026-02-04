@@ -86,15 +86,17 @@ const markMessagesAsSeen = async (req, res) => {
 
 const sendMessage = async (req, res) => {
   try {
-    const { text, image } = req.body;
+    const { text } = req.body;
     const recieverId = req.params.id;
     const senderId = req.user._id;
 
     let imageUrl;
 
-    if (image) {
-      const response = await uploadOnCloudinary(image);
-      imageUrl = response.secure_url;
+    if (req.file) {
+      const response = await uploadOnCloudinary(req.file.path);
+      if(response){
+        imageUrl = response.secure_url;
+      }
     }
 
     const newMessage = await Message.create({
@@ -107,7 +109,7 @@ const sendMessage = async (req, res) => {
     // Emit the new message to the receiver
     const receiverSocketId = userSocketMap[recieverId];
     if(receiverSocketId) {
-      io.to(receiverSocketId).emit("new-message", newMessage);
+      io.to(receiverSocketId).emit("newMessage", newMessage);
     }
 
     return res.status(200).json({
