@@ -42,7 +42,6 @@ io.on("connection", (socket) => {
     delete userSocketMap[userId];
     io.emit("get-online-users", Object.keys(userSocketMap));
   });
-
 });
 
 app.use(express.json());
@@ -55,7 +54,6 @@ app.use(
   }),
 );
 
-const PORT = process.env.PORT || 8080;
 connectDB();
 
 app.use("/api/users", userRouter);
@@ -65,6 +63,12 @@ app.get("/", (req, res) => {
   res.send("Hello World");
 });
 
-server.listen(PORT, () => {
-  console.log(`server is running on port ${PORT}`);
-});
+if (process.env.NODE_ENV !== "production") {
+  const PORT = process.env.PORT || 8080;
+  server.listen(PORT, () => {
+    console.log(`server is running on port ${PORT}`);
+  });
+}
+
+// Export server for vercel
+export default server;
