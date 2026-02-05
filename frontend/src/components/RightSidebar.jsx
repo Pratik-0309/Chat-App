@@ -1,6 +1,17 @@
-import { imagesDummyData } from "../assets/assets";
+import { useContext, useEffect, useState } from "react";
+import { ChatContext } from "../context/ChatContext";
+import { AuthContext } from "../context/AuthContext";
 
-const RightSidebar = ({ selectedUser }) => {
+const RightSidebar = () => {
+  const { selectedUser, messages } = useContext(ChatContext);
+  const { logout, onlineUsers } = useContext(AuthContext);
+  const [ msgImages, setMsgImages ] = useState([]);
+
+  // Get all images from messages
+  useEffect(() => {
+    setMsgImages(messages.filter((msg) => msg.image).map((msg) => msg.image));
+  }, [messages]);
+
   if (!selectedUser) return <div className="hidden lg:block w-80"></div>;
 
   return (
@@ -13,7 +24,9 @@ const RightSidebar = ({ selectedUser }) => {
             alt={selectedUser.fullName}
             className="w-24 h-24 rounded-full object-cover border-2 border-violet-500/30 p-1"
           />
-          <span className="absolute bottom-2 right-2 w-4 h-4 bg-green-500 border-4 border-[#121212] rounded-full"></span>
+          {onlineUsers.includes(selectedUser._id) && (
+            <span className="absolute bottom-2 right-2 w-4 h-4 bg-green-500 border-4 border-[#121212] rounded-full"></span>
+          )}
         </div>
         <h2 className="text-xl font-semibold text-white">
           {selectedUser.fullName}
@@ -31,7 +44,7 @@ const RightSidebar = ({ selectedUser }) => {
 
         {/* Grid layout matching the theme style */}
         <div className="grid grid-cols-3 gap-2">
-          {imagesDummyData.map((img, index) => (
+          {msgImages.map((img, index) => (
             <div
               onClick={() => window.open(img)}
               key={index}
@@ -47,7 +60,7 @@ const RightSidebar = ({ selectedUser }) => {
         </div>
       </div>
 
-      <button
+      <button onClick={()=> logout()}
         className="absolute bottom-5 left-1/2 transform -translate-x-1/2
           bg-linear-to-r from-purple-400 to-violet-600 text-white border-none
           text-sm font-light py-2 px-20 rounded-full cursor-pointer"
