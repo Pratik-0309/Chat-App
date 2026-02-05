@@ -5,7 +5,7 @@ import uploadOnCloudinary from "../config/cloudinary.js";
 const options = {
   httpOnly: true,
   secure: false,
-  sameSite: "Lax",
+  sameSite: "None",
   path: "/",
 };
 
